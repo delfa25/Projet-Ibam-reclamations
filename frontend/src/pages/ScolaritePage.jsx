@@ -3,10 +3,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { reclamationService } from '../services/reclamationService';
 import VerifyReclamationForm from '../components/scolarite/VerifyReclamationForm';
+import ReclamationDetails from '../components/ReclamationDetails';
 
 const ScolaritePage = () => {
   const [reclamations, setReclamations] = useState([]);
   const [selectedReclamation, setSelectedReclamation] = useState(null);
+  const [viewingDetails, setViewingDetails] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { user, logout } = useAuth();
@@ -64,7 +66,7 @@ const ScolaritePage = () => {
                 IBAM - Scolarité
               </h1>
               <p className="text-sm text-gray-600">
-                Vérification des réclamations - {user.name}
+                Vérification des réclamations - {user.prenom} {user.nom}
               </p>
             </div>
             <div className="flex items-center space-x-4">
@@ -88,7 +90,15 @@ const ScolaritePage = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          {selectedReclamation ? (
+          {selectedReclamation && viewingDetails ? (
+            <ReclamationDetails
+              reclamationId={selectedReclamation.id}
+              onClose={() => {
+                setSelectedReclamation(null);
+                setViewingDetails(false);
+              }}
+            />
+          ) : selectedReclamation ? (
             <VerifyReclamationForm
               reclamation={selectedReclamation}
               onSuccess={handleVerifySuccess}
@@ -147,7 +157,7 @@ const ScolaritePage = () => {
                             {reclamation.numero_demande}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {reclamation.etudiant?.name}
+                            {reclamation.etudiant?.prenom} {reclamation.etudiant?.nom}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {reclamation.matiere?.nom_matiere}
@@ -163,9 +173,21 @@ const ScolaritePage = () => {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             {reclamation.date_soumission}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                             <button
-                              onClick={() => setSelectedReclamation(reclamation)}
+                              onClick={() => {
+                                setSelectedReclamation(reclamation);
+                                setViewingDetails(true);
+                              }}
+                              className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm"
+                            >
+                              Voir détails
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedReclamation(reclamation);
+                                setViewingDetails(false);
+                              }}
                               className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
                             >
                               Vérifier

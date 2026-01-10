@@ -13,9 +13,9 @@ class IbamSeeder extends Seeder
     {
         // Filières
         $filieres = [
-            ['code_filiere' => 'INFO', 'nom_filiere' => 'Informatique', 'departement' => 'Sciences et Technologies'],
-            ['code_filiere' => 'ELEC', 'nom_filiere' => 'Électronique', 'departement' => 'Sciences et Technologies'],
-            ['code_filiere' => 'MECA', 'nom_filiere' => 'Mécanique', 'departement' => 'Ingénierie'],
+            ['code_filiere' => 'INFO', 'nom_filiere' => 'Informatique'],
+            ['code_filiere' => 'ELEC', 'nom_filiere' => 'Électronique'],
+            ['code_filiere' => 'MECA', 'nom_filiere' => 'Mécanique'],
         ];
         
         foreach ($filieres as $filiere) {
@@ -28,34 +28,43 @@ class IbamSeeder extends Seeder
         // Utilisateurs de test
         $users = [
             [
-                'name' => 'Étudiant Test',
+                'nom' => 'Test',
+                'prenom' => 'Étudiant',
                 'email' => 'etudiant@ibam.bf',
                 'password' => Hash::make('password'),
                 'role' => 'ETUDIANT',
                 'matricule' => 'ETU2024001',
                 'filiere_id' => 1,
-                'telephone' => '70123456'
+                'telephone' => '70123456',
+                'ine' => 'INE2024000001',
+                'niveau' => 'L1'
             ],
             [
-                'name' => 'Agent Scolarité',
+                'nom' => 'Scolarité',
+                'prenom' => 'Agent',
                 'email' => 'scolarite@ibam.bf',
                 'password' => Hash::make('password'),
                 'role' => 'SCOLARITE',
+                'matricule' => 'SCO2024001',
                 'telephone' => '70654321'
             ],
             [
-                'name' => 'Enseignant Info',
+                'nom' => 'Info',
+                'prenom' => 'Enseignant',
                 'email' => 'enseignant@ibam.bf',
                 'password' => Hash::make('password'),
                 'role' => 'ENSEIGNANT',
+                'matricule' => 'ENS2024001',
                 'filiere_id' => 1,
                 'telephone' => '70987654'
             ],
             [
-                'name' => 'Directeur Adjoint',
+                'nom' => 'Adjoint',
+                'prenom' => 'Directeur',
                 'email' => 'da@ibam.bf',
                 'password' => Hash::make('password'),
                 'role' => 'DA',
+                'matricule' => 'DA2024001',
                 'telephone' => '70456789'
             ]
         ];

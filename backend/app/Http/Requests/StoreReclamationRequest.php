@@ -14,12 +14,9 @@ class StoreReclamationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'filiere_id' => 'required|exists:filieres,id',
             'matiere_id' => 'required|exists:matieres,id',
-            'enseignant_id' => 'required|exists:users,id',
             'objet_demande' => 'required|string|max:255',
-            'motif' => 'required|string|min:10',
-            'justificatif' => 'required|file|mimes:jpeg,jpg,png,pdf|max:5120' // 5MB max
+            'motif' => 'required|string|min:10'
         ];
     }
 

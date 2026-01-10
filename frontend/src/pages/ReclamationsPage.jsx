@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import CreateReclamationForm from '../components/etudiant/CreateReclamationForm';
 import ReclamationsList from '../components/etudiant/ReclamationsList';
+import ReclamationDetails from '../components/ReclamationDetails';
 
 const ReclamationsPage = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -70,46 +71,10 @@ const ReclamationsPage = () => {
               onCancel={() => setShowCreateForm(false)}
             />
           ) : selectedReclamation ? (
-            <div className="bg-white p-6 rounded-lg shadow">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Détails de la réclamation
-                </h2>
-                <button
-                  onClick={() => setSelectedReclamation(null)}
-                  className="text-gray-600 hover:text-gray-900"
-                >
-                  ← Retour à la liste
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="font-medium text-gray-900">N° Demande</h3>
-                  <p className="text-gray-600">{selectedReclamation.numero_demande}</p>
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900">Matière</h3>
-                  <p className="text-gray-600">{selectedReclamation.matiere?.nom_matiere}</p>
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900">Statut</h3>
-                  <p className="text-gray-600">{selectedReclamation.statut}</p>
-                </div>
-                <div>
-                  <h3 className="font-medium text-gray-900">Date de création</h3>
-                  <p className="text-gray-600">{selectedReclamation.created_at}</p>
-                </div>
-                <div className="md:col-span-2">
-                  <h3 className="font-medium text-gray-900">Objet</h3>
-                  <p className="text-gray-600">{selectedReclamation.objet_demande}</p>
-                </div>
-                <div className="md:col-span-2">
-                  <h3 className="font-medium text-gray-900">Motif</h3>
-                  <p className="text-gray-600">{selectedReclamation.motif}</p>
-                </div>
-              </div>
-            </div>
+            <ReclamationDetails
+              reclamationId={selectedReclamation.id}
+              onClose={() => setSelectedReclamation(null)}
+            />
           ) : (
             <div className="space-y-6">
               <div className="flex justify-between items-center">

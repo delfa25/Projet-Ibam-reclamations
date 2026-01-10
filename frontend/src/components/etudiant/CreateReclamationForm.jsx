@@ -64,8 +64,8 @@ const CreateReclamationForm = ({ onSuccess, onCancel }) => {
     setError('');
 
     // Validation des champs obligatoires
-    if (!formData.filiere_id || !formData.matiere_id || !formData.enseignant_id || !formData.objet_demande || !formData.motif || !formData.justificatif) {
-      setError('Tous les champs sont obligatoires');
+    if (!formData.matiere_id || !formData.objet_demande || !formData.motif) {
+      setError('Tous les champs obligatoires doivent être remplis');
       setLoading(false);
       return;
     }
@@ -80,12 +80,12 @@ const CreateReclamationForm = ({ onSuccess, onCancel }) => {
 
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append('filiere_id', formData.filiere_id);
       formDataToSend.append('matiere_id', formData.matiere_id);
-      formDataToSend.append('enseignant_id', formData.enseignant_id);
       formDataToSend.append('objet_demande', formData.objet_demande);
       formDataToSend.append('motif', formData.motif);
-      formDataToSend.append('justificatif', formData.justificatif);
+      if (formData.justificatif) {
+        formDataToSend.append('justificatif', formData.justificatif);
+      }
       
       await reclamationService.create(formDataToSend);
       onSuccess?.();

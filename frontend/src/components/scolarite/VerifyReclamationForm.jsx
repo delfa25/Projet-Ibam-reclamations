@@ -1,11 +1,26 @@
 import { useState, useEffect } from 'react';
 import { reclamationService } from '../../services/reclamationService';
+import JustificatifViewer from '../JustificatifViewer';
 
 const VerifyReclamationForm = ({ reclamation, onSuccess, onCancel }) => {
   const [decision, setDecision] = useState('');
   const [commentaire, setCommentaire] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [reclamationDetails, setReclamationDetails] = useState(null);
+
+  useEffect(() => {
+    loadReclamationDetails();
+  }, [reclamation.id]);
+
+  const loadReclamationDetails = async () => {
+    try {
+      const data = await reclamationService.getById(reclamation.id);
+      setReclamationDetails(data);
+    } catch (err) {
+      console.error('Erreur chargement détails');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,7 +55,7 @@ const VerifyReclamationForm = ({ reclamation, onSuccess, onCancel }) => {
           </div>
           <div>
             <h3 className="font-medium text-gray-900">Étudiant</h3>
-            <p className="text-gray-600">{reclamation.etudiant?.name}</p>
+            <p className="text-gray-600">{reclamation.etudiant?.prenom} {reclamation.etudiant?.nom}</p>
           </div>
           <div>
             <h3 className="font-medium text-gray-900">Matière</h3>
@@ -57,6 +72,9 @@ const VerifyReclamationForm = ({ reclamation, onSuccess, onCancel }) => {
           <div className="md:col-span-2">
             <h3 className="font-medium text-gray-900">Motif</h3>
             <p className="text-gray-600">{reclamation.motif}</p>
+          </div>
+          <div className="md:col-span-2">
+            <JustificatifViewer justificatifs={reclamationDetails?.justificatifs || []} />
           </div>
         </div>
       </div>

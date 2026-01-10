@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import CreateUserForm from './CreateUserForm';
+import UserDetails from './UserDetails';
 
 const UsersList = () => {
   const [users, setUsers] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -14,7 +16,7 @@ const UsersList = () => {
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const url = filter ? `/api/users?role=${filter}` : '/api/users';
+      const url = filter ? `http://localhost:8000/api/users?role=${filter}` : 'http://localhost:8000/api/users';
       const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
@@ -30,7 +32,7 @@ const UsersList = () => {
   const handleDelete = async (userId) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
       try {
-        await fetch(`/api/users/${userId}`, {
+        await fetch(`http://localhost:8000/api/users/${userId}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
@@ -40,6 +42,15 @@ const UsersList = () => {
       }
     }
   };
+
+  if (selectedUserId) {
+    return (
+      <UserDetails
+        userId={selectedUserId}
+        onClose={() => setSelectedUserId(null)}
+      />
+    );
+  }
 
   if (showCreateForm) {
     return (
@@ -113,6 +124,12 @@ const UsersList = () => {
                     </div>
                   </div>
                   <div className="flex space-x-2">
+                    <button
+                      onClick={() => setSelectedUserId(user.id)}
+                      className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                    >
+                      Voir détails
+                    </button>
                     <button
                       onClick={() => handleDelete(user.id)}
                       className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"

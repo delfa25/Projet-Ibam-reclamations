@@ -28,7 +28,7 @@ const CreateUserForm = ({ onSuccess, onCancel }) => {
 
   const loadMatieresByFiliere = async (filiereId) => {
     try {
-      const response = await fetch(`/api/filieres/${filiereId}/matieres`, {
+      const response = await fetch(`http://localhost:8000/api/filieres/${filiereId}/matieres`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       const data = await response.json();
@@ -40,8 +40,11 @@ const CreateUserForm = ({ onSuccess, onCancel }) => {
 
   const loadFilieres = async () => {
     try {
-      const response = await fetch('/api/filieres', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      const response = await fetch('http://localhost:8000/api/filieres', {
+        headers: { 
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Accept': 'application/json'
+        }
       });
       const data = await response.json();
       setFilieres(data);
@@ -56,7 +59,7 @@ const CreateUserForm = ({ onSuccess, onCancel }) => {
     setError('');
 
     try {
-      const response = await fetch('/api/users', {
+      const response = await fetch('http://localhost:8000/api/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

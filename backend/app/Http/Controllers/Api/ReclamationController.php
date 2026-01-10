@@ -14,7 +14,7 @@ class ReclamationController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $query = Reclamation::with(['etudiant', 'matiere', 'enseignant']);
+        $query = Reclamation::with(['etudiant', 'matiere', 'enseignant', 'justificatifs']);
 
         // Filtrage par rôle
         switch ($user->role) {
@@ -38,41 +38,53 @@ class ReclamationController extends Controller
 
     public function store(StoreReclamationRequest $request)
     {
-        // Vérifier que la matière appartient à la filière
-        $matiere = \App\Models\Matiere::where('id', $request->matiere_id)
-                                      ->where('filiere_id', $request->filiere_id)
-                                      ->first();
-        
-        if (!$matiere) {
-            return response()->json(['message' => 'La matière ne correspond pas à la filière sélectionnée'], 422);
-        }
-
-        $reclamation = Reclamation::create([
-            'numero_demande' => 'REC-' . date('Y') . '-' . str_pad(Reclamation::count() + 1, 4, '0', STR_PAD_LEFT),
-            'etudiant_id' => $request->user()->id,
-            'matiere_id' => $request->matiere_id,
-            'enseignant_id' => $request->enseignant_id,
-            'objet_demande' => $request->objet_demande,
-            'motif' => $request->motif,
-            'statut' => 'BROUILLON'
-        ]);
-
-        // Gérer l'upload du justificatif
-        if ($request->hasFile('justificatif')) {
-            $file = $request->file('justificatif');
-            $fileName = time() . '_' . $file->getClientOriginalName();
-            $filePath = $file->storeAs('justificatifs', $fileName, 'public');
+        try {
+            // Récupérer la matière pour obtenir la filière
+            $matiere = \App\Models\Matiere::with('filiere')->find($request->matiere_id);
             
-            \App\Models\Justificatif::create([
-                'reclamation_id' => $reclamation->id,
-                'nom_fichier' => $file->getClientOriginalName(),
-                'chemin_fichier' => $filePath,
-                'type_fichier' => $file->getMimeType(),
-                'taille' => $file->getSize()
-            ]);
-        }
+            if (!$matiere) {
+                return response()->json(['message' => 'Matière non trouvée'], 422);
+            }
 
-        return response()->json($reclamation->load(['matiere', 'etudiant', 'justificatifs']), 201);
+            $reclamation = Reclamation::create([
+                'numero_demande' => 'REC-' . date('Y') . '-' . str_pad(Reclamation::count() + 1, 4, '0', STR_PAD_LEFT),
+                'etudiant_id' => $request->user()->id,
+                'matiere_id' => $request->matiere_id,
+                'enseignant_id' => $matiere->enseignant_id ?? null,
+                'objet_demande' => $request->objet_demande,
+                'motif' => $request->motif,
+                'statut' => 'BROUILLON'
+            ]);
+
+            // Gérer l'upload du justificatif
+            if ($request->hasFile('justificatif')) {
+                $file = $request->file('justificatif');
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $filePath = $file->storeAs('justificatifs', $fileName, 'public');
+                
+                \App\Models\Justificatif::create([
+                    'reclamation_id' => $reclamation->id,
+                    'nom_fichier' => $file->getClientOriginalName(),
+                    'chemin_fichier' => $filePath,
+                    'type_fichier' => $file->getMimeType(),
+                    'taille' => $file->getSize()
+                ]);
+            }
+
+            return response()->json($reclamation->load(['matiere', 'etudiant', 'justificatifs']), 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Erreur validation réclamation: ' . json_encode($e->errors()));
+            return response()->json([
+                'message' => 'Erreur de validation',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Erreur création réclamation: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Erreur lors de la création de la réclamation',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function show(Reclamation $reclamation)
@@ -154,10 +166,10 @@ class ReclamationController extends Controller
             return response()->json(['message' => 'Tous les champs obligatoires doivent être remplis'], 422);
         }
 
-        // Vérifier qu'un justificatif est attaché
-        if (!$reclamation->justificatifs()->exists()) {
-            return response()->json(['message' => 'Un justificatif est obligatoire pour soumettre la réclamation'], 422);
-        }
+        // Vérifier qu'un justificatif est attaché (optionnel pour le brouillon)
+        // if (!$reclamation->justificatifs()->exists()) {
+        //     return response()->json(['message' => 'Un justificatif est obligatoire pour soumettre la réclamation'], 422);
+        // }
 
         $reclamation->update([
             'statut' => 'SOUMISE',
