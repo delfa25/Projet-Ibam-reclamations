@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { reclamationService } from '../services/reclamationService';
+import ReclamationDetails from '../components/ReclamationDetails';
 
 const DAPage = () => {
   const [reclamations, setReclamations] = useState([]);
   const [selectedReclamation, setSelectedReclamation] = useState(null);
+  const [viewingDetails, setViewingDetails] = useState(false);
   const [filter, setFilter] = useState('ALL');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -113,7 +115,15 @@ const DAPage = () => {
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          {selectedReclamation ? (
+          {selectedReclamation && viewingDetails ? (
+            <ReclamationDetails
+              reclamationId={selectedReclamation.id}
+              onClose={() => {
+                setSelectedReclamation(null);
+                setViewingDetails(false);
+              }}
+            />
+          ) : selectedReclamation ? (
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
@@ -304,10 +314,13 @@ const DAPage = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                           <button
-                            onClick={() => setSelectedReclamation(reclamation)}
+                            onClick={() => {
+                              setSelectedReclamation(reclamation);
+                              setViewingDetails(true);
+                            }}
                             className="text-blue-600 hover:text-blue-900"
                           >
-                            Voir
+                            Voir détails
                           </button>
                           {reclamation.statut === 'RECEVABLE' && (
                             <button
