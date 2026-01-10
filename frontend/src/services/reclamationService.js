@@ -49,5 +49,20 @@ export const reclamationService = {
   async getMatieres() {
     const response = await api.get('/matieres');
     return response.data;
+  },
+
+  async getFilieres() {
+    const response = await api.get('/filieres');
+    return response.data;
+  },
+
+  async getMatieresByFiliere(filiereId) {
+    const response = await api.get(`/filieres/${filiereId}/matieres`);
+    return response.data;
+  },
+
+  async getEnseignantsByFiliere(filiereId) {
+    const response = await api.get(`/filieres/${filiereId}/enseignants`);
+    return response.data;
   }
 };

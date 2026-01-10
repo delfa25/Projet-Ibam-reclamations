@@ -9,8 +9,7 @@ class Filiere extends Model
 {
     protected $fillable = [
         'code_filiere',
-        'nom_filiere', 
-        'departement'
+        'nom_filiere'
     ];
 
     public function matieres(): HasMany

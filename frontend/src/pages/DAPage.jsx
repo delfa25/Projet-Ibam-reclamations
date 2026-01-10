@@ -82,7 +82,6 @@ const DAPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
@@ -112,7 +111,6 @@ const DAPage = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           {selectedReclamation ? (
@@ -197,7 +195,6 @@ const DAPage = () => {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Statistiques */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="bg-white p-6 rounded-lg shadow">
                   <h3 className="text-lg font-medium text-gray-900">Total</h3>
@@ -217,7 +214,6 @@ const DAPage = () => {
                 </div>
               </div>
 
-              {/* Filtres */}
               <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-900">
                   Toutes les réclamations ({filteredReclamations.length})
@@ -256,7 +252,6 @@ const DAPage = () => {
                 </div>
               )}
 
-              {/* Liste des réclamations */}
               <div className="bg-white shadow rounded-lg overflow-hidden">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">

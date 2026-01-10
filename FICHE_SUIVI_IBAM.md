@@ -6,20 +6,20 @@
 ## 🎯 INFORMATIONS GÉNÉRALES
 - **Projet** : Système de réclamation de notes IBAM
 - **Architecture** : 3-tiers (React + Laravel API + MySQL)
-- **Date début** : ___________
+- **Date début** : 08/01/2026
 - **Date prévue fin** : ___________
-- **Développeur(s)** : ___________
+- **Développeur(s)** : Équipe de développement IBAM
 
 ---
 
 ## 📊 PROGRESSION GLOBALE
 - [x] **Phase 1** : Configuration & Base (100%)
-- [x] **Phase 2** : Backend API Laravel (60%)
-- [ ] **Phase 3** : Frontend React (0%)
+- [x] **Phase 2** : Backend API Laravel (65%)
+- [x] **Phase 3** : Frontend React (15%)
 - [ ] **Phase 4** : Tests & Documentation (0%)
 - [ ] **Phase 5** : Déploiement (0%)
 
-**Avancement total : 32%**
+**Avancement total : 36%**
 
 ---
 
@@ -70,10 +70,10 @@
 - [x] Migration `create_historique_traitements_table`
 - [x] Migration `create_notifications_table` (via Spatie)
 - [x] Migration `modify_users_table` (ajouter role, matricule, filiere_id)
-- [ ] Modèle `Filiere.php` avec relations
-- [ ] Modèle `Matiere.php` avec relations
-- [ ] Modèle `Reclamation.php` avec relations et statuts
-- [ ] Modèle `Note.php` avec relations
+- [x] Modèle `Filiere.php` avec relations
+- [x] Modèle `Matiere.php` avec relations
+- [x] Modèle `Reclamation.php` avec relations et statuts
+- [x] Modèle `Note.php` avec relations
 
 ### 🔐 Authentification & Autorisations (8 tâches)
 - [ ] Configurer Sanctum dans `config/sanctum.php`
@@ -81,7 +81,7 @@
 - [ ] Controller `AuthController` (login, logout, user)
 - [ ] Middleware `CheckRole.php`
 - [ ] Middleware `EnsureReclamationOwnership.php`
-- [ ] Policy `ReclamationPolicy.php`
+- [x] Policy `ReclamationPolicy.php`
 - [ ] Policy `NotePolicy.php`
 - [ ] Seeder pour rôles et permissions
 
@@ -95,9 +95,9 @@
 - [ ] Service `NotificationService.php`
 - [ ] Service `WorkflowService.php`
 - [ ] Repository `ReclamationRepository.php`
-- [ ] Request `StoreReclamationRequest.php`
+- [x] Request `StoreReclamationRequest.php`
 - [ ] Request `UpdateReclamationRequest.php`
-- [ ] Resource `ReclamationResource.php`
+- [x] Resource `ReclamationResource.php`
 - [ ] Resource `UserResource.php`
 - [ ] Notification `ReclamationCreatedNotification.php`
 - [ ] Gestion upload fichiers (Storage)

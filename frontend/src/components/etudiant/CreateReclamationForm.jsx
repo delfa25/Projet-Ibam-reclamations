@@ -3,24 +3,58 @@ import { reclamationService } from '../../services/reclamationService';
 
 const CreateReclamationForm = ({ onSuccess, onCancel }) => {
   const [formData, setFormData] = useState({
+    filiere_id: '',
     matiere_id: '',
+    enseignant_id: '',
     objet_demande: '',
-    motif: ''
+    motif: '',
+    justificatif: null
   });
+  const [filieres, setFilieres] = useState([]);
   const [matieres, setMatieres] = useState([]);
+  const [enseignants, setEnseignants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    loadMatieres();
+    loadFilieres();
   }, []);
 
-  const loadMatieres = async () => {
+  useEffect(() => {
+    if (formData.filiere_id) {
+      loadMatieres(formData.filiere_id);
+      loadEnseignants(formData.filiere_id);
+    } else {
+      setMatieres([]);
+      setEnseignants([]);
+      setFormData(prev => ({ ...prev, matiere_id: '', enseignant_id: '' }));
+    }
+  }, [formData.filiere_id]);
+
+  const loadFilieres = async () => {
     try {
-      const data = await reclamationService.getMatieres();
+      const data = await reclamationService.getFilieres();
+      setFilieres(data);
+    } catch (err) {
+      setError('Erreur lors du chargement des filières');
+    }
+  };
+
+  const loadMatieres = async (filiereId) => {
+    try {
+      const data = await reclamationService.getMatieresByFiliere(filiereId);
       setMatieres(data);
     } catch (err) {
       setError('Erreur lors du chargement des matières');
+    }
+  };
+
+  const loadEnseignants = async (filiereId) => {
+    try {
+      const data = await reclamationService.getEnseignantsByFiliere(filiereId);
+      setEnseignants(data);
+    } catch (err) {
+      setError('Erreur lors du chargement des enseignants');
     }
   };
 
@@ -29,8 +63,31 @@ const CreateReclamationForm = ({ onSuccess, onCancel }) => {
     setLoading(true);
     setError('');
 
+    // Validation des champs obligatoires
+    if (!formData.filiere_id || !formData.matiere_id || !formData.enseignant_id || !formData.objet_demande || !formData.motif || !formData.justificatif) {
+      setError('Tous les champs sont obligatoires');
+      setLoading(false);
+      return;
+    }
+
+    // Validation du fichier justificatif
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+    if (!allowedTypes.includes(formData.justificatif.type)) {
+      setError('Le justificatif doit être une image (JPG, PNG) ou un PDF');
+      setLoading(false);
+      return;
+    }
+
     try {
-      await reclamationService.create(formData);
+      const formDataToSend = new FormData();
+      formDataToSend.append('filiere_id', formData.filiere_id);
+      formDataToSend.append('matiere_id', formData.matiere_id);
+      formDataToSend.append('enseignant_id', formData.enseignant_id);
+      formDataToSend.append('objet_demande', formData.objet_demande);
+      formDataToSend.append('motif', formData.motif);
+      formDataToSend.append('justificatif', formData.justificatif);
+      
+      await reclamationService.create(formDataToSend);
       onSuccess?.();
     } catch (err) {
       setError(err.response?.data?.message || 'Erreur lors de la création');
@@ -43,6 +100,14 @@ const CreateReclamationForm = ({ onSuccess, onCancel }) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
+    });
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setFormData({
+      ...formData,
+      justificatif: file
     });
   };
 
@@ -61,6 +126,26 @@ const CreateReclamationForm = ({ onSuccess, onCancel }) => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
+            Filière *
+          </label>
+          <select
+            name="filiere_id"
+            value={formData.filiere_id}
+            onChange={handleChange}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Sélectionner une filière</option>
+            {filieres.map(filiere => (
+              <option key={filiere.id} value={filiere.id}>
+                {filiere.nom_filiere} ({filiere.code_filiere})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Matière *
           </label>
           <select
@@ -68,12 +153,34 @@ const CreateReclamationForm = ({ onSuccess, onCancel }) => {
             value={formData.matiere_id}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={!formData.filiere_id}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
           >
             <option value="">Sélectionner une matière</option>
             {matieres.map(matiere => (
               <option key={matiere.id} value={matiere.id}>
                 {matiere.nom_matiere} ({matiere.code_matiere})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Enseignant *
+          </label>
+          <select
+            name="enseignant_id"
+            value={formData.enseignant_id}
+            onChange={handleChange}
+            required
+            disabled={!formData.filiere_id}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+          >
+            <option value="">Sélectionner un enseignant</option>
+            {enseignants.map(enseignant => (
+              <option key={enseignant.id} value={enseignant.id}>
+                {enseignant.prenom} {enseignant.nom}
               </option>
             ))}
           </select>
@@ -107,6 +214,27 @@ const CreateReclamationForm = ({ onSuccess, onCancel }) => {
             placeholder="Expliquez en détail votre réclamation..."
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Justificatif (Feuille de copie) *
+          </label>
+          <input
+            type="file"
+            onChange={handleFileChange}
+            required
+            accept=".jpg,.jpeg,.png,.pdf"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <p className="text-sm text-gray-500 mt-1">
+            Formats acceptés : JPG, PNG, PDF (max 5MB)
+          </p>
+          {formData.justificatif && (
+            <p className="text-sm text-green-600 mt-1">
+              Fichier sélectionné : {formData.justificatif.name}
+            </p>
+          )}
         </div>
 
         <div className="flex justify-end space-x-4">

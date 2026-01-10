@@ -7,6 +7,8 @@ import ReclamationsPage from './pages/ReclamationsPage';
 import ScolaritePage from './pages/ScolaritePage';
 import EnseignantPage from './pages/EnseignantPage';
 import DAPage from './pages/DAPage';
+import UsersList from './components/admin/UsersList';
+import FiliereManagement from './components/admin/FiliereManagement';
 
 function App() {
   return (
@@ -51,6 +53,22 @@ function App() {
             element={
               <ProtectedRoute roles={['DA']}>
                 <DAPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/users" 
+            element={
+              <ProtectedRoute roles={['DA']}>
+                <UsersList />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/filieres" 
+            element={
+              <ProtectedRoute roles={['DA']}>
+                <FiliereManagement />
               </ProtectedRoute>
             } 
           />

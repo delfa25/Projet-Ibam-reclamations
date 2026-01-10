@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreReclamationRequest;
 use App\Models\Reclamation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ReclamationController extends Controller
@@ -34,24 +36,43 @@ class ReclamationController extends Controller
         return response()->json($query->latest()->get());
     }
 
-    public function store(Request $request)
+    public function store(StoreReclamationRequest $request)
     {
-        $request->validate([
-            'matiere_id' => 'required|exists:matieres,id',
-            'objet_demande' => 'required|string',
-            'motif' => 'required|string'
-        ]);
+        // Vérifier que la matière appartient à la filière
+        $matiere = \App\Models\Matiere::where('id', $request->matiere_id)
+                                      ->where('filiere_id', $request->filiere_id)
+                                      ->first();
+        
+        if (!$matiere) {
+            return response()->json(['message' => 'La matière ne correspond pas à la filière sélectionnée'], 422);
+        }
 
         $reclamation = Reclamation::create([
             'numero_demande' => 'REC-' . date('Y') . '-' . str_pad(Reclamation::count() + 1, 4, '0', STR_PAD_LEFT),
             'etudiant_id' => $request->user()->id,
             'matiere_id' => $request->matiere_id,
+            'enseignant_id' => $request->enseignant_id,
             'objet_demande' => $request->objet_demande,
             'motif' => $request->motif,
             'statut' => 'BROUILLON'
         ]);
 
-        return response()->json($reclamation->load(['matiere', 'etudiant']), 201);
+        // Gérer l'upload du justificatif
+        if ($request->hasFile('justificatif')) {
+            $file = $request->file('justificatif');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('justificatifs', $fileName, 'public');
+            
+            \App\Models\Justificatif::create([
+                'reclamation_id' => $reclamation->id,
+                'nom_fichier' => $file->getClientOriginalName(),
+                'chemin_fichier' => $filePath,
+                'type_fichier' => $file->getMimeType(),
+                'taille' => $file->getSize()
+            ]);
+        }
+
+        return response()->json($reclamation->load(['matiere', 'etudiant', 'justificatifs']), 201);
     }
 
     public function show(Reclamation $reclamation)
@@ -66,14 +87,50 @@ class ReclamationController extends Controller
         }
 
         $request->validate([
+            'filiere_id' => 'sometimes|exists:filieres,id',
             'matiere_id' => 'sometimes|exists:matieres,id',
-            'objet_demande' => 'sometimes|string',
-            'motif' => 'sometimes|string'
+            'objet_demande' => 'sometimes|string|max:255',
+            'motif' => 'sometimes|string|min:10',
+            'justificatif' => 'sometimes|file|mimes:jpeg,jpg,png,pdf|max:5120'
         ]);
+
+        // Vérifier la cohérence filière/matière si les deux sont fournis
+        if ($request->has(['filiere_id', 'matiere_id'])) {
+            $matiere = \App\Models\Matiere::where('id', $request->matiere_id)
+                                          ->where('filiere_id', $request->filiere_id)
+                                          ->first();
+            
+            if (!$matiere) {
+                return response()->json(['message' => 'La matière ne correspond pas à la filière sélectionnée'], 422);
+            }
+        }
 
         $reclamation->update($request->only(['matiere_id', 'objet_demande', 'motif']));
 
-        return response()->json($reclamation->load(['matiere', 'etudiant']));
+        // Gérer le nouveau justificatif si fourni
+        if ($request->hasFile('justificatif')) {
+            // Supprimer l'ancien justificatif
+            $ancienJustificatif = $reclamation->justificatifs()->first();
+            if ($ancienJustificatif) {
+                \Storage::disk('public')->delete($ancienJustificatif->chemin_fichier);
+                $ancienJustificatif->delete();
+            }
+
+            // Ajouter le nouveau
+            $file = $request->file('justificatif');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('justificatifs', $fileName, 'public');
+            
+            \App\Models\Justificatif::create([
+                'reclamation_id' => $reclamation->id,
+                'nom_fichier' => $file->getClientOriginalName(),
+                'chemin_fichier' => $filePath,
+                'type_fichier' => $file->getMimeType(),
+                'taille' => $file->getSize()
+            ]);
+        }
+
+        return response()->json($reclamation->load(['matiere', 'etudiant', 'justificatifs']));
     }
 
     public function destroy(Reclamation $reclamation)
@@ -90,6 +147,16 @@ class ReclamationController extends Controller
     {
         if ($reclamation->statut !== 'BROUILLON') {
             return response()->json(['message' => 'Réclamation déjà soumise'], 400);
+        }
+
+        // Vérifier que tous les champs obligatoires sont remplis
+        if (!$reclamation->matiere_id || !$reclamation->objet_demande || !$reclamation->motif) {
+            return response()->json(['message' => 'Tous les champs obligatoires doivent être remplis'], 422);
+        }
+
+        // Vérifier qu'un justificatif est attaché
+        if (!$reclamation->justificatifs()->exists()) {
+            return response()->json(['message' => 'Un justificatif est obligatoire pour soumettre la réclamation'], 422);
         }
 
         $reclamation->update([

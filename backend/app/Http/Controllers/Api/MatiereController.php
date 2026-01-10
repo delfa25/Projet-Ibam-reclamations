@@ -25,4 +25,17 @@ class MatiereController extends Controller
     {
         return response()->json($matiere->load(['filiere', 'enseignant']));
     }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'code_matiere' => 'required|string|unique:matieres',
+            'nom_matiere' => 'required|string',
+            'credit' => 'required|integer|min:1',
+            'filiere_id' => 'required|exists:filieres,id'
+        ]);
+
+        $matiere = Matiere::create($request->only(['code_matiere', 'nom_matiere', 'credit', 'filiere_id']));
+        return response()->json($matiere->load('filiere'), 201);
+    }
 }
