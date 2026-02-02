@@ -141,6 +141,16 @@ class ReclamationController extends Controller
             // 'commentaire_scolarite' => $request->commentaire // Optional
         ]);
 
+        // Envoyer un email à l'étudiant si la réclamation est rejetée
+        if (!$request->recevable) {
+            try {
+                \Illuminate\Support\Facades\Mail::to($reclamation->etudiant->email)
+                    ->send(new \App\Mail\ReclamationRejetee($reclamation));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Erreur envoi mail rejet: ' . $e->getMessage());
+            }
+        }
+
         return response()->json($reclamation);
     }
 

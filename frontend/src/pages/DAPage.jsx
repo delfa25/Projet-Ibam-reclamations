@@ -4,7 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { reclamationService } from '../services/reclamationService';
 import ReclamationDetails from '../components/ReclamationDetails';
 import TransmettreScolariteForm from '../components/admin/TransmettreScolariteForm';
-import ImputerForm from '../components/admin/ImputerForm'; // Assuming this exists or I will create it
+import ImputerForm from '../components/admin/ImputerForm';
+import VerifyReclamationForm from '../components/scolarite/VerifyReclamationForm';
+import TraiterReclamationForm from '../components/enseignant/TraiterReclamationForm';
+import FinaliserReclamationForm from '../components/scolarite/FinaliserReclamationForm';
 import StatusBadge from '../components/common/StatusBadge';
 
 const DAPage = () => {
@@ -13,6 +16,9 @@ const DAPage = () => {
   const [viewingDetails, setViewingDetails] = useState(false);
   const [transmettingToScolarite, setTransmettingToScolarite] = useState(false);
   const [imputing, setImputing] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [treating, setTreating] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
   const [filter, setFilter] = useState('ALL');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -26,13 +32,8 @@ const DAPage = () => {
   const loadReclamations = async () => {
     try {
       const data = await reclamationService.getAll();
-      // DA voit :
-      // RECEVABLE (à imputer)
-      // EN_TRAITEMENT (en cours chez prof)
-      // VALIDE_ENSEIGNANT / INVALIDE_ENSEIGNANT (retour prof, à transmettre)
-      // TRANSMIS_SCOLARITE (suivi)
-      // TRAITE (historique)
-      const visibleStatuses = ['RECEVABLE', 'EN_TRAITEMENT', 'VALIDE_ENSEIGNANT', 'INVALIDE_ENSEIGNANT', 'TRANSMIS_SCOLARITE', 'TRAITE'];
+      // DA voit TOUTES les réclamations (super-admin)
+      const visibleStatuses = ['SOUMIS', 'RECEVABLE', 'REJETE', 'EN_TRAITEMENT', 'VALIDE_ENSEIGNANT', 'INVALIDE_ENSEIGNANT', 'TRANSMIS_SCOLARITE', 'TRAITE'];
       setReclamations(data.filter(r => visibleStatuses.includes(r.status)));
     } catch (err) {
       setError('Erreur lors du chargement');
@@ -48,9 +49,11 @@ const DAPage = () => {
 
   const getFilteredReclamations = () => {
     if (filter === 'ALL') return reclamations;
+    if (filter === 'A_VERIFIER') return reclamations.filter(r => r.status === 'SOUMIS');
     if (filter === 'A_IMPUTER') return reclamations.filter(r => r.status === 'RECEVABLE');
     if (filter === 'EN_COURS') return reclamations.filter(r => r.status === 'EN_TRAITEMENT');
     if (filter === 'A_TRANSMETTRE') return reclamations.filter(r => ['VALIDE_ENSEIGNANT', 'INVALIDE_ENSEIGNANT'].includes(r.status));
+    if (filter === 'A_FINALISER') return reclamations.filter(r => r.status === 'TRANSMIS_SCOLARITE');
     return reclamations.filter(r => r.status === filter);
   };
 
@@ -76,6 +79,19 @@ const DAPage = () => {
               setViewingDetails(false);
             }}
           />
+        ) : selectedReclamation && verifying ? (
+          <VerifyReclamationForm
+            reclamation={selectedReclamation}
+            onSuccess={() => {
+              setSelectedReclamation(null);
+              setVerifying(false);
+              loadReclamations();
+            }}
+            onCancel={() => {
+              setSelectedReclamation(null);
+              setVerifying(false);
+            }}
+          />
         ) : selectedReclamation && imputing ? (
           <ImputerForm
             reclamation={selectedReclamation}
@@ -87,6 +103,19 @@ const DAPage = () => {
             onCancel={() => {
               setSelectedReclamation(null);
               setImputing(false);
+            }}
+          />
+        ) : selectedReclamation && treating ? (
+          <TraiterReclamationForm
+            reclamation={selectedReclamation}
+            onSuccess={() => {
+              setSelectedReclamation(null);
+              setTreating(false);
+              loadReclamations();
+            }}
+            onCancel={() => {
+              setSelectedReclamation(null);
+              setTreating(false);
             }}
           />
         ) : selectedReclamation && transmettingToScolarite ? (
@@ -102,6 +131,19 @@ const DAPage = () => {
               setTransmettingToScolarite(false);
             }}
           />
+        ) : selectedReclamation && finalizing ? (
+          <FinaliserReclamationForm
+            reclamation={selectedReclamation}
+            onSuccess={() => {
+              setSelectedReclamation(null);
+              setFinalizing(false);
+              loadReclamations();
+            }}
+            onCancel={() => {
+              setSelectedReclamation(null);
+              setFinalizing(false);
+            }}
+          />
         ) : (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -115,9 +157,11 @@ const DAPage = () => {
                   className="px-3 py-1 border border-gray-300 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="ALL">Toutes</option>
+                  <option value="A_VERIFIER">À vérifier</option>
                   <option value="A_IMPUTER">À imputer</option>
                   <option value="EN_COURS">En traitement</option>
                   <option value="A_TRANSMETTRE">À transmettre</option>
+                  <option value="A_FINALISER">À finaliser</option>
                 </select>
               </div>
             </div>
@@ -180,6 +224,17 @@ const DAPage = () => {
                         >
                           Détails
                         </button>
+                        {reclamation.status === 'SOUMIS' && (
+                          <button
+                            onClick={() => {
+                              setSelectedReclamation(reclamation);
+                              setVerifying(true);
+                            }}
+                            className="text-indigo-600 hover:text-indigo-900 font-semibold"
+                          >
+                            Vérifier
+                          </button>
+                        )}
                         {reclamation.status === 'RECEVABLE' && (
                           <button
                             onClick={() => {
@@ -191,6 +246,17 @@ const DAPage = () => {
                             Imputer
                           </button>
                         )}
+                        {reclamation.status === 'EN_TRAITEMENT' && (
+                          <button
+                            onClick={() => {
+                              setSelectedReclamation(reclamation);
+                              setTreating(true);
+                            }}
+                            className="text-orange-600 hover:text-orange-900 font-semibold"
+                          >
+                            Traiter
+                          </button>
+                        )}
                         {(reclamation.status === 'VALIDE_ENSEIGNANT' || reclamation.status === 'INVALIDE_ENSEIGNANT') && (
                           <button
                             onClick={() => {
@@ -200,6 +266,17 @@ const DAPage = () => {
                             className="text-purple-600 hover:text-purple-900 font-semibold"
                           >
                             Transmettre
+                          </button>
+                        )}
+                        {reclamation.status === 'TRANSMIS_SCOLARITE' && (
+                          <button
+                            onClick={() => {
+                              setSelectedReclamation(reclamation);
+                              setFinalizing(true);
+                            }}
+                            className="text-teal-600 hover:text-teal-900 font-semibold"
+                          >
+                            Finaliser
                           </button>
                         )}
                       </td>
