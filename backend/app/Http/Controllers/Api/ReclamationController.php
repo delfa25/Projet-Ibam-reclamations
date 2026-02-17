@@ -58,7 +58,7 @@ class ReclamationController extends Controller
                 'message' => 'required|string',
                 'type' => 'required|string',
                 'matiere_id' => 'required|exists:matieres,id',
-                'piece_jointe' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120', // Obligatoire, PDF/Image, max 5MB
+                'piece_jointe' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240', // Obligatoire, PDF/Image, max 10MB
             ]);
 
             $path = null;

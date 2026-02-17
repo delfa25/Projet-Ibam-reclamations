@@ -33,13 +33,18 @@ export default function EditReclamationForm({ reclamation, onSuccess }) {
             formData.append('type', data.type);
             formData.append('matiere_id', data.matiere_id);
 
-            // Gestion du fichier uniquement en création pour l'instant (simplification)
-            if (!reclamation && data.piece_jointe[0]) {
+            // Gestion du fichier
+            if (!reclamation && data.piece_jointe?.[0]) {
                 formData.append('piece_jointe', data.piece_jointe[0]);
+                console.log('File added to FormData:', data.piece_jointe[0].name, data.piece_jointe[0].size);
+            }
+
+            // Debug FormData
+            for (let pair of formData.entries()) {
+                console.log(pair[0], pair[1]);
             }
 
             if (reclamation) {
-                // Update logic... (si on veut gérer l'update de fichier plus tard)
                 await reclamationService.update(reclamation.id, data);
             } else {
                 await reclamationService.create(formData);
@@ -47,6 +52,8 @@ export default function EditReclamationForm({ reclamation, onSuccess }) {
             onSuccess();
         } catch (error) {
             console.error('Error saving reclamation:', error);
+            console.error('Error response:', error.response?.data);
+            console.error('Validation errors:', error.response?.data?.errors);
             const msg = error.response?.data?.errors
                 ? Object.values(error.response.data.errors).flat().join('\n')
                 : (error.response?.data?.message || 'Erreur lors de la sauvegarde');

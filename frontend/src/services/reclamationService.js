@@ -9,9 +9,7 @@ export const reclamationService = {
 
     // Créer une réclamation (avec support fichier)
     create: async (data) => {
-        const response = await api.post('/reclamations', data, {
-            headers: { 'Content-Type': undefined }
-        });
+        const response = await api.post('/reclamations', data);
         return response.data;
     },
 
@@ -75,11 +73,7 @@ export const reclamationService = {
 
     // Ajouter un justificatif
     addJustificatif: async (id, formData) => {
-        const response = await api.post(`/reclamations/${id}/justificatifs`, formData, {
-            headers: {
-                'Content-Type': undefined,
-            },
-        });
+        const response = await api.post(`/reclamations/${id}/justificatifs`, formData);
         return response.data;
     },
 
