@@ -18,18 +18,14 @@ class ReclamationController extends Controller
         $user = Auth::user();
 
         if ($user->hasRole('DA')) {
-            return Reclamation::with(['etudiant', 'matiere', 'enseignant'])->latest()->get();
+            return Reclamation::with(['etudiant', 'matiere', 'enseignant'])->latest()->paginate(20);
         }
 
         if ($user->hasRole('SCOLARITE')) {
-            // Scolarité voit :
-            // - SOUMIS (pour valider la recevabilité)
-            // - TRANSMIS_SCOLARITE (pour finaliser)
-            // - TRAITE, REJETE (Historique)
             return Reclamation::with(['etudiant', 'matiere', 'enseignant'])
                 ->whereIn('status', ['SOUMIS', 'TRANSMIS_SCOLARITE', 'TRAITE', 'REJETE', 'RECEVABLE'])
                 ->latest()
-                ->get();
+                ->paginate(20);
         }
 
         if ($user->hasRole('ENSEIGNANT')) {
@@ -37,14 +33,14 @@ class ReclamationController extends Controller
                 ->where('enseignant_id', $user->id)
                 ->where('status', '!=', 'BROUILLON')
                 ->latest()
-                ->get();
+                ->paginate(20);
         }
 
         // Etudiant
         return Reclamation::with(['etudiant', 'matiere', 'enseignant'])
             ->where('etudiant_id', $user->id)
             ->latest()
-            ->get();
+            ->paginate(20);
     }
 
     /**
@@ -58,23 +54,25 @@ class ReclamationController extends Controller
                 'message' => 'required|string',
                 'type' => 'required|string',
                 'matiere_id' => 'required|exists:matieres,id',
-                'piece_jointe' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240', // Obligatoire, PDF/Image, max 10MB
+                'piece_jointe' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
             ]);
 
-            $path = null;
-            if ($request->hasFile('piece_jointe')) {
-                $path = $request->file('piece_jointe')->store('justificatifs', 'public');
-            }
+            \DB::transaction(function() use ($request, &$reclamation) {
+                $path = null;
+                if ($request->hasFile('piece_jointe')) {
+                    $path = $request->file('piece_jointe')->store('justificatifs', 'public');
+                }
 
-            $reclamation = Reclamation::create([
-                'objet' => $request->objet,
-                'message' => $request->message,
-                'type' => $request->type,
-                'status' => 'BROUILLON', // Par défaut
-                'etudiant_id' => Auth::id(),
-                'matiere_id' => $request->matiere_id,
-                'piece_jointe' => $path,
-            ]);
+                $reclamation = Reclamation::create([
+                    'objet' => $request->objet,
+                    'message' => $request->message,
+                    'type' => $request->type,
+                    'status' => 'BROUILLON',
+                    'etudiant_id' => Auth::id(),
+                    'matiere_id' => $request->matiere_id,
+                    'piece_jointe' => $path,
+                ]);
+            });
 
             return response()->json($reclamation, 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -132,24 +130,24 @@ class ReclamationController extends Controller
     // Etape 2: Scolarité vérifie la recevabilité
     public function verifier(Request $request, Reclamation $reclamation)
     {
-        $this->authorize('verifier', $reclamation); // Policy check: User is SCOLARITE
+        $this->authorize('verifier', $reclamation);
 
         $status = $request->recevable ? 'RECEVABLE' : 'REJETE';
         
-        $reclamation->update([
-            'status' => $status,
-            // 'commentaire_scolarite' => $request->commentaire // Optional
-        ]);
+        \DB::transaction(function() use ($reclamation, $status, $request) {
+            $reclamation->update(['status' => $status]);
 
-        // Envoyer un email à l'étudiant si la réclamation est rejetée
-        if (!$request->recevable) {
-            try {
-                \Illuminate\Support\Facades\Mail::to($reclamation->etudiant->email)
-                    ->send(new \App\Mail\ReclamationRejetee($reclamation));
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Erreur envoi mail rejet: ' . $e->getMessage());
+            if (!$request->recevable) {
+                try {
+                    \App\Jobs\SendReclamationEmail::dispatch(
+                        $reclamation->etudiant->email,
+                        new \App\Mail\ReclamationRejetee($reclamation)
+                    );
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Erreur envoi mail rejet: ' . $e->getMessage());
+                }
             }
-        }
+        });
 
         return response()->json($reclamation);
     }
@@ -202,21 +200,24 @@ class ReclamationController extends Controller
     // Etape 6: Scolarité finalise (Corrige la note ou clôture)
     public function finaliser(Request $request, Reclamation $reclamation)
     {
-        $this->authorize('finaliser', $reclamation); // Policy check: User is SCOLARITE
+        $this->authorize('finaliser', $reclamation);
 
-        $reclamation->update([
-            'status' => 'TRAITE',
-            'commentaire_scolarite' => $request->commentaire,
-            'date_validation' => now(),
-        ]);
+        \DB::transaction(function() use ($reclamation, $request) {
+            $reclamation->update([
+                'status' => 'TRAITE',
+                'commentaire_scolarite' => $request->commentaire,
+                'date_validation' => now(),
+            ]);
 
-        // Envoyer email à l'étudiant
-        try {
-            \Illuminate\Support\Facades\Mail::to($reclamation->etudiant->email)->send(new \App\Mail\ReclamationTraitee($reclamation));
-        } catch (\Exception $e) {
-            // Log error but don't fail request
-             \Illuminate\Support\Facades\Log::error('Erreur envoi mail: ' . $e->getMessage());
-        }
+            try {
+                \App\Jobs\SendReclamationEmail::dispatch(
+                    $reclamation->etudiant->email,
+                    new \App\Mail\ReclamationTraitee($reclamation)
+                );
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Erreur envoi mail: ' . $e->getMessage());
+            }
+        });
 
         return response()->json($reclamation);
     }
